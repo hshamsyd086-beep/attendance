@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>سجل الحضور والانصراف — كل المواقع</title>
+<style>
+  :root{
+    --bg:#14181F;
+    --surface:#1B212C;
+    --surface-2:#212836;
+    --border:#2A3140;
+    --gold:#C9A227;
+    --gold-soft:#8A7226;
+    --gold-bright:#E3C158;
+    --text:#EDEFF3;
+    --text-dim:#9AA3B2;
+    --text-faint:#6A7284;
+    --ok:#3FA66B;
+    --ok-bg:#1B2B22;
+    --bad:#D2685F;
+    --bad-bg:#2C1E1E;
+    --vac:#5B8DD6;
+    --vac-bg:#1C2530;
+    --perm:#D6A15B;
+    --perm-bg:#2A2419;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Segoe UI', Tahoma, 'Arial', sans-serif;
+    font-variant-numeric: tabular-nums;
+    min-height:100vh;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 60px;}
+
+  header.top{
+    display:flex;align-items:flex-end;justify-content:space-between;
+    gap:16px;flex-wrap:wrap;
+    border-bottom:1px solid var(--border);
+    padding-bottom:18px;margin-bottom:22px;
+  }
+  .brand{display:flex;flex-direction:column;gap:6px;}
+  .brand .bar{width:46px;height:4px;background:var(--gold);border-radius:2px;}
+  .brand h1{margin:0;font-size:26px;font-weight:700;letter-spacing:.2px;}
+  .brand p{margin:0;color:var(--text-dim);font-size:14px;}
+  .tabs{display:flex;gap:6px;background:var(--surface);padding:4px;border-radius:10px;border:1px solid var(--border);}
+  .tab{
+    padding:9px 16px;border-radius:7px;font-size:14px;color:var(--text-dim);
+    cursor:pointer;user-select:none;transition:background .15s,color .15s;white-space:nowrap;
+  }
+  .tab.active{background:var(--gold);color:#1B140A;font-weight:600;}
+  .tab:not(.active):hover{color:var(--text);}
+
+  .panel{display:none;}
+  .panel.active{display:block;}
+
+  /* Day strip */
+  .daystrip{display:flex;gap:6px;overflow-x:auto;padding:4px 2px 14px;margin-bottom:6px;}
+  .daychip{
+    flex:0 0 auto;min-width:58px;text-align:center;padding:8px 6px;border-radius:9px;
+    background:var(--surface);border:1px solid var(--border);cursor:pointer;
+    transition:background .15s,border-color .15s;
+  }
+  .daychip .n{font-size:16px;font-weight:700;}
+  .daychip .d{font-size:11px;color:var(--text-dim);margin-top:2px;}
+  .daychip.active{background:var(--gold);border-color:var(--gold);}
+  .daychip.active .n,.daychip.active .d{color:#1B140A;}
+  .daychip.friday:not(.active){border-color:#3a3320;}
+  .daychip.has-data:not(.active)::after{
+    content:"";display:block;width:5px;height:5px;border-radius:50%;
+    background:var(--gold-soft);margin:4px auto 0;
+  }
+
+  .toolbar{
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
+    margin-bottom:16px;
+  }
+  .toolbar .date-label{font-size:15px;color:var(--text-dim);}
+  .toolbar .date-label b{color:var(--text);font-weight:700;}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  .bulk-entry{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 10px;}
+  .bulk-time{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--text-dim);}
+  .bulk-time input{
+    background:var(--surface-2);border:1px solid var(--border);border-radius:6px;color:var(--text);
+    padding:6px 7px;font-family:inherit;font-size:13px;
+  }
+  button{
+    font-family:inherit;font-size:13.5px;cursor:pointer;border-radius:8px;border:1px solid var(--border);
+    background:var(--surface-2);color:var(--text);padding:9px 14px;transition:filter .15s,background .15s;
+  }
+  button:hover{filter:brightness(1.12);}
+  button.primary{background:var(--gold);border-color:var(--gold);color:#1B140A;font-weight:600;}
+  button.ghost{background:transparent;}
+  button.danger{color:var(--bad);}
+  button:disabled{opacity:.45;cursor:not-allowed;}
+
+  /* Employee ledger */
+  .ledger{display:flex;flex-direction:column;gap:16px;}
+  .site-section{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+  .site-head{
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;
+    padding:12px 16px;background:var(--surface-2);border-bottom:1px solid var(--border);
+  }
+  .site-name{font-size:14px;font-weight:600;}
+  .site-count{color:var(--text-faint);font-weight:400;font-size:12.5px;}
+  .site-mark-btn{
+    font-size:12px;padding:6px 11px;border-radius:7px;border:1px solid var(--gold-soft);
+    background:transparent;color:var(--gold-bright);cursor:pointer;
+  }
+  .site-mark-btn:hover{background:var(--perm-bg);}
+  .ename-cell{display:flex;flex-direction:column;gap:5px;}
+  .subloc-group{display:flex;gap:5px;}
+  .subloc-chip{
+    padding:3px 8px;border-radius:5px;font-size:11px;border:1px solid var(--border);
+    background:var(--surface-2);color:var(--text-faint);cursor:pointer;transition:.15s;
+  }
+  .subloc-chip:hover{filter:brightness(1.2);}
+  .subloc-chip.sel{background:var(--vac-bg);border-color:var(--vac);color:var(--vac);}
+  .lrow{
+    display:grid;
+    grid-template-columns: 26px 1fr 220px 130px 150px 70px 80px;
+    align-items:center;gap:10px;
+    padding:11px 16px;border-bottom:1px solid var(--border);
+  }
+  .lrow:last-child{border-bottom:none;}
+  .lrow.head{
+    background:var(--surface-2);color:var(--text-faint);font-size:12px;padding:9px 16px;
+  }
+  .lrow:not(.head):hover{background:#1F2632;}
+  .idx{color:var(--text-faint);font-size:12px;}
+  .ename{font-size:14.5px;cursor:pointer;transition:color .15s;}
+  .ename:hover{color:var(--gold-bright);text-decoration:underline;}
+  .status-group{display:flex;gap:5px;flex-wrap:wrap;}
+  .schip{
+    padding:5px 9px;border-radius:6px;font-size:12px;border:1px solid var(--border);
+    background:var(--surface-2);color:var(--text-dim);cursor:pointer;transition:.15s;
+  }
+  .schip:hover{filter:brightness(1.2);}
+  .schip.sel-present{background:var(--ok-bg);border-color:var(--ok);color:var(--ok);}
+  .schip.sel-absent{background:var(--bad-bg);border-color:var(--bad);color:var(--bad);}
+  .schip.sel-vacation{background:var(--vac-bg);border-color:var(--vac);color:var(--vac);}
+  .schip.sel-permission{background:var(--perm-bg);border-color:var(--perm);color:var(--perm);}
+  .times{display:flex;gap:6px;}
+  .times input{
+    width:74px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;
+    color:var(--text);padding:5px 6px;font-size:12.5px;font-family:inherit;
+  }
+  .times input:disabled{opacity:.3;}
+  .notes-wrap input{
+    width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;
+    color:var(--text);padding:5px 7px;font-size:12.5px;font-family:inherit;
+  }
+  .num{text-align:center;font-size:13.5px;}
+  .num.ot{color:var(--gold);font-weight:600;}
+  .num.short{color:var(--bad);font-weight:600;}
+  .num.zero{color:var(--text-faint);}
+
+  .empty-note{padding:30px;text-align:center;color:var(--text-dim);font-size:14px;}
+
+  /* Summary */
+  .summary-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+  table.summary{width:100%;border-collapse:collapse;font-size:13.5px;}
+  table.summary th{
+    text-align:right;padding:11px 14px;background:var(--surface-2);color:var(--text-faint);
+    font-size:12px;font-weight:600;border-bottom:1px solid var(--border);
+  }
+  table.summary td{padding:10px 14px;border-bottom:1px solid var(--border);}
+  table.summary tr:last-child td{border-bottom:none;}
+  table.summary tr:hover td{background:#1F2632;}
+  td.center,th.center{text-align:center;}
+  .pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:12px;}
+  .pill.ok{background:var(--ok-bg);color:var(--ok);}
+  .pill.bad{background:var(--bad-bg);color:var(--bad);}
+  .pill.gold{background:#2A2412;color:var(--gold-bright);}
+
+  .cards-top{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:18px;}
+  .kcard{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;}
+  .kcard .v{font-size:26px;font-weight:700;}
+  .kcard .l{font-size:12.5px;color:var(--text-dim);margin-top:4px;}
+  .kcard.accent .v{color:var(--gold-bright);}
+
+  /* Employees management */
+  .emp-manage{display:flex;flex-direction:column;gap:8px;max-width:640px;}
+  .emp-item{display:flex;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:8px 10px;}
+  .emp-item input{
+    flex:1;background:transparent;border:none;color:var(--text);font-size:14px;font-family:inherit;
+    padding:4px 6px;
+  }
+  .emp-item input:focus{outline:none;background:var(--surface-2);border-radius:5px;}
+  .emp-item .rm{color:var(--bad);border:none;background:transparent;font-size:16px;padding:2px 8px;}
+  .leave-field{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim);flex:0 0 auto;}
+  .leave-field input{
+    width:58px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;
+    color:var(--text);padding:5px 6px;font-family:inherit;font-size:13px;text-align:center;
+  }
+  .add-emp{display:flex;gap:8px;margin-top:6px;}
+  .add-emp input{
+    flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);
+    padding:9px 12px;font-family:inherit;font-size:14px;
+  }
+
+  .save-hint{font-size:12px;color:var(--text-faint);margin-top:14px;}
+
+  /* Employee detail modal */
+  .modal-overlay{
+    display:none;position:fixed;inset:0;background:rgba(10,12,16,.72);
+    align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto;z-index:50;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal-card{
+    background:var(--surface);border:1px solid var(--border);border-radius:14px;
+    width:100%;max-width:900px;padding:22px;
+  }
+  .modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px;}
+  .modal-head h2{margin:0 0 4px;font-size:20px;}
+  .modal-head .sub{color:var(--text-dim);font-size:13px;}
+  .modal-close{
+    background:var(--surface-2);border:1px solid var(--border);color:var(--text-dim);
+    border-radius:8px;width:34px;height:34px;font-size:16px;cursor:pointer;flex:0 0 auto;
+  }
+  .modal-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:16px;}
+  .modal-kpis .kcard{padding:12px 14px;}
+  .modal-kpis .kcard .v{font-size:20px;}
+  .modal-table-wrap{max-height:60vh;overflow:auto;border:1px solid var(--border);border-radius:10px;}
+  table.modal-table{width:100%;border-collapse:collapse;font-size:13px;}
+  table.modal-table th{
+    position:sticky;top:0;text-align:right;padding:9px 12px;background:var(--surface-2);
+    color:var(--text-faint);font-size:11.5px;font-weight:600;border-bottom:1px solid var(--border);
+  }
+  table.modal-table td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+  table.modal-table tr:last-child td{border-bottom:none;}
+  table.modal-table tr.row-absent td.st{color:var(--bad);}
+  table.modal-table tr.row-vacation td.st{color:var(--vac);}
+  table.modal-table tr.row-permission td.st{color:var(--perm);}
+  table.modal-table tr.row-present td.st{color:var(--ok);}
+  table.modal-table tr.row-unset td.st{color:var(--text-faint);}
+  table.modal-table .mnote{
+    width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;
+    color:var(--text);padding:5px 7px;font-size:12.5px;font-family:inherit;
+  }
+  ::-webkit-scrollbar{height:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+
+  @media (max-width:760px){
+    .lrow{grid-template-columns: 1fr; gap:6px;}
+    .lrow.head{display:none;}
+    .lrow:not(.head){padding:14px 16px;}
+    .lrow .idx{display:none;}
+    .times{flex-wrap:wrap;}
+    .notes-wrap::before{content:"ملاحظات: ";display:block;font-size:12px;color:var(--text-faint);margin-bottom:3px;}
+    .num{text-align:right;font-size:13px;}
+    .num::before{content:attr(data-label) ": ";color:var(--text-faint);}
+  }
+
+#loginOv{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px}
+#loginOv .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:26px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:12px}
+#loginOv h2{margin:0 0 4px;font-size:20px}#loginOv input{background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:11px;font-size:15px;font-family:inherit}
+#loginErr{color:var(--bad);font-size:13px;min-height:18px}
+#syncBar{position:fixed;bottom:10px;left:10px;z-index:900;display:flex;gap:6px;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px 10px;font-size:12px;color:var(--text-dim)}
+#syncBar button{padding:4px 9px;font-size:12px}#syncDot{width:9px;height:9px;border-radius:50%;background:var(--bad)}#syncDot.on{background:var(--ok)}
+</style>
+<style>
+.filterbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:18px;position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0}
+.filterbar select,.filterbar input{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:9px;padding:10px 12px;font:inherit;font-size:14px}
+.filterbar select{min-width:210px}
+.qwrap{position:relative;flex:1;min-width:220px}.qwrap input{width:100%;padding-inline-end:36px}
+.qwrap button{position:absolute;inset-inline-end:6px;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--text-dim);cursor:pointer;font-size:14px}
+#cnt{color:var(--text-dim);font-size:13.5px}
+.site-select{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px;font:inherit}
+#summaryTable td:nth-child(2){color:var(--text-dim);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <div class="bar"></div>
+      <h1>سجل الحضور والانصراف — كل المواقع</h1>
+      <p id="monthLabel"></p>
+    </div>
+    <div class="tabs">
+      <div class="tab active" data-tab="day">التسجيل اليومي</div>
+      <div class="tab" data-tab="summary">الملخص الشهري</div>
+      <div class="tab" data-tab="employees">الموظفون</div>
+    </div>
+  </header>
+  <div class="filterbar">
+    <select id="siteSel" aria-label="الموقع"></select>
+    <div class="qwrap"><input type="search" id="q" placeholder="ابحث باسم الموظف..." autocomplete="off"><button id="qClear" title="مسح">✕</button></div>
+    <span id="cnt"></span>
+  </div>
+
+  <!-- DAY PANEL -->
+  <section class="panel active" id="panel-day">
+    <div class="daystrip" id="dayStrip"></div>
+
+    <div class="toolbar">
+      <div class="date-label">تسجيل يوم <b id="dateBig">—</b></div>
+      <div class="btns bulk-entry">
+        <div class="bulk-time"><span>الحضور</span><input type="time" id="bulkIn" value="08:00"></div>
+        <div class="bulk-time"><span>الانصراف</span><input type="time" id="bulkOut" value="16:00"></div>
+        <button class="primary" id="btnMarkAll">تسجيل الوقت ده للظاهرين حاليًا</button>
+        <button class="ghost" id="btnClearDay">مسح اليوم</button>
+      </div>
+    </div>
+
+    <div class="ledger" id="ledger"></div>
+    <div class="save-hint">أي تعديل بيتحفظ فورًا. دوس على "حاضر/غائب/إجازة/إذن" لأي موظف عشان تستثنيه، أو عدّل وقته يدويًا.</div>
+  </section>
+
+  <!-- SUMMARY PANEL -->
+  <section class="panel" id="panel-summary">
+    <div class="cards-top" id="kpis"></div>
+    <div class="summary-wrap">
+      <table class="summary" id="summaryTable">
+        <thead>
+          <tr>
+            <th>الموظف</th><th>الموقع</th>
+            <th class="center">أيام حضور</th>
+            <th class="center">أيام غياب</th>
+            <th class="center">إجازة</th>
+            <th class="center">رصيد الإجازات المتبقي</th>
+            <th class="center">إذن</th>
+            <th class="center">إجمالي الساعات</th>
+            <th class="center">إجمالي الإضافي / النقص</th>
+          </tr>
+        </thead>
+        <tbody id="summaryBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- EMPLOYEES PANEL -->
+  <section class="panel" id="panel-employees">
+    <p style="color:var(--text-dim);font-size:13.5px;margin-top:0;">عدّل الأسماء والمواقع هنا (القائمة بتتفلتر بالموقع وخانة البحث). التعديل بينعكس فورًا على كل الأيام.</p>
+    <div class="emp-manage" id="empManage"></div>
+    <div class="add-emp">
+      <input type="text" id="newEmpName" placeholder="اسم موظف جديد">
+      <select id="newEmpSite" class="site-select"></select>
+      <button class="primary" id="btnAddEmp">إضافة</button>
+    </div>
+  </section>
+
+</div>
+
+<div class="modal-overlay" id="empModalOverlay">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div>
+        <h2 id="modalEmpName">—</h2>
+        <div class="sub">سبتمبر 2026 — كل أيام الشهر</div>
+      </div>
+      <button class="modal-close" id="modalCloseBtn">✕</button>
+    </div>
+    <div class="modal-kpis" id="modalKpis"></div>
+    <div class="modal-table-wrap">
+      <table class="modal-table">
+        <thead>
+          <tr>
+            <th>التاريخ</th>
+            <th>الحالة</th>
+            <th>حضور</th>
+            <th>انصراف</th>
+            <th class="center">ساعات</th>
+            <th class="center">إضافي / نقص</th>
+            <th>ملاحظات</th>
+          </tr>
+        </thead>
+        <tbody id="modalTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const KEY='attendance_all_sites_2026_09_v1';
+const YEAR=2026, MONTH=9, DIM=30;
+const WEEKDAYS=["الأحد","الإثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
+const SITES=[
+  {id:'sharm',name:'شرم الشيخ'},
+  {id:'dahab_shorouk',name:'الدهب و الشروق'},
+  {id:'drivers',name:'السواقين'},
+  {id:'cloud_lobby',name:'كلاود + لوبي سهل حشيش'},
+  {id:'isis',name:'ايزيس (الخشب)'}
+];
+const DUAL='dahab_shorouk';
+const DEF={in:'08:00',out:'16:00',off:8,fri:false};
+const CFG={drivers:{out:'18:00',off:10,fri:true}};
+const cfg=s=>Object.assign({},DEF,CFG[s]||{});
+const OLD_KEYS={ // مفاتيح الملفات القديمة (لو اتعدل فيها قبل كده في نفس المتصفح)
+  'attendance_ايزيس__الخشب_v2':'isis','attendance_شرم_الشيخ_v2':'sharm',
+  'attendance-2026-09-cloud-lobby_v2':'cloud_lobby',
+  'attendance_السواقين_v2':'dahab_shorouk','attendance-2026-09-dahab-tenth_v2':'drivers'
+};
+const BASE={"emps":[],"days":{}};
+const ST={p:'present',a:'absent',v:'vacation',m:'permission'};
+let state=null, selectedDay=1, fSite='', fQ='';
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm=s=>String(s||'').toLowerCase().replace(/[\u064B-\u0652\u0640]/g,'').replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي').replace(/\s+/g,' ').trim();
+const uid=()=>'e'+Math.random().toString(36).slice(2,9);
+const siteName=id=>(SITES.find(s=>s.id===id)||{}).name||'غير محدد';
+
+function fromBase(){
+  const employees=BASE.emps.map(e=>({id:e[0],name:e[1],site:e[2],leaveBalance:0,src:e[2]}));
+  const days={};
+  for(const d in BASE.days){days[d]={};for(const id in BASE.days[d]){const r=BASE.days[d][id];
+    days[d][id]={status:ST[r[0]],in:r[1],out:r[2],notes:r[3],subLoc:{dahab:false,shorouk:false}};}}
+  return {employees,days};
+}
+function migrateOld(s){
+  try{
+    for(const k in OLD_KEYS){
+      const raw=localStorage.getItem(k); if(!raw) continue;
+      const o=JSON.parse(raw); if(!o||!o.employees) continue;
+      const tag=OLD_KEYS[k];
+      const gone=new Set(s.employees.filter(e=>e.src===tag).map(e=>e.id));
+      s.employees=s.employees.filter(e=>!gone.has(e.id));
+      for(const d in s.days) for(const id of gone) delete s.days[d][id];
+      o.employees.forEach(e=>{
+        const nid=tag+'_'+e.id;
+        s.employees.push({id:nid,name:e.name,site:e.site||tag,leaveBalance:e.leaveBalance||0,src:tag});
+        for(const d in (o.days||{})){const en=o.days[d][e.id]; if(en){(s.days[d]=s.days[d]||{})[nid]=en;}}
+      });
+    }
+  }catch(e){}
+  return s;
+}
+function load(){
+  try{const raw=localStorage.getItem(KEY); if(raw) state=JSON.parse(raw);}catch(e){}
+  if(!state){state=migrateOld(fromBase()); save();}
+  state.employees.forEach(e=>{if(typeof e.leaveBalance!=='number')e.leaveBalance=0;});
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){} try{window.__onSave&&window.__onSave();}catch(e){}}
+let t=null; const saveSoon=()=>{clearTimeout(t);t=setTimeout(save,150);};
+
+function getEntry(d,id){
+  const r=state.days[d]=state.days[d]||{};
+  const e=r[id]=r[id]||{status:'unset',in:'',out:'',notes:'',subLoc:{dahab:false,shorouk:false}};
+  if(!e.subLoc)e.subLoc={dahab:false,shorouk:false}; if(typeof e.notes!=='string')e.notes='';
+  return e;
+}
+function peek(d,id){const r=state.days[d],e=r&&r[id];return e?{status:e.status||'unset',in:e.in||'',out:e.out||'',notes:e.notes||''}:{status:'unset',in:'',out:'',notes:''};}
+const th=s=>{if(!s)return null;const [h,m]=s.split(':').map(Number);return isNaN(h)?null:h+(m||0)/60;};
+function fmt(h){if(h==null||isNaN(h))return '—';const sg=h<0?'-':'';h=Math.abs(h);let hh=Math.floor(h),mm=Math.round((h-hh)*60);if(mm===60){hh++;mm=0;}return sg+hh+':'+String(mm).padStart(2,'0');}
+const dow=d=>new Date(YEAR,MONTH-1,d).getDay();
+function calc(e,d,site){
+  if(e.status!=='present')return{worked:0,ot:0};
+  const a=th(e.in),b=th(e.out); if(a==null||b==null)return{worked:0,ot:0};
+  let w=b-a; if(w<0)w+=24;
+  const c=cfg(site); const off=(c.fri&&dow(d)===5)?0:c.off;
+  return{worked:w,ot:w-off};
+}
+function visible(){
+  const q=norm(fQ).split(' ').filter(Boolean);
+  return state.employees.filter(e=>(!fSite||e.site===fSite)&&q.every(w=>norm(e.name).includes(w)));
+}
+
+/* ---------- filter bar ---------- */
+function renderFilter(){
+  const sel=$('siteSel'); const cur=fSite;
+  sel.innerHTML='<option value="">كل المواقع ('+state.employees.length+')</option>'+
+    SITES.map(s=>`<option value="${s.id}">${esc(s.name)} (${state.employees.filter(e=>e.site===s.id).length})</option>`).join('');
+  sel.value=cur;
+}
+function updateCount(){
+  const n=visible().length;
+  $('cnt').textContent=n+' موظف';
+  $('monthLabel').textContent='سبتمبر 2026 · '+(fSite?siteName(fSite)+' · ':'')+n+' موظف';
+}
+
+/* ---------- day strip + ledger ---------- */
+function renderStrip(){
+  const ids=new Set(visible().map(e=>e.id)); const s=$('dayStrip'); s.innerHTML='';
+  for(let d=1;d<=DIM;d++){
+    const wd=WEEKDAYS[dow(d)], rec=state.days[d];
+    const has=rec&&Object.keys(rec).some(id=>ids.has(id)&&rec[id].status&&rec[id].status!=='unset');
+    const c=document.createElement('div');
+    c.className='daychip'+(d===selectedDay?' active':'')+(dow(d)===5?' friday':'')+(has?' has-data':'');
+    c.innerHTML=`<div class="n">${d}</div><div class="d">${wd.slice(0,4)}</div>`;
+    c.onclick=()=>{selectedDay=d;renderDay();};
+    s.appendChild(c);
+  }
+}
+const chip=(id,st,lb,cur)=>`<div class="schip${cur===st?' sel-'+st:''}" data-emp="${id}" data-status="${st}">${lb}</div>`;
+function renderLedger(){
+  const L=$('ledger'); $('dateBig').textContent=`${selectedDay} سبتمبر — ${WEEKDAYS[dow(selectedDay)]}`;
+  const vis=visible();
+  if(!vis.length){L.innerHTML='<div class="empty-note">مفيش موظفين مطابقين للبحث أو للموقع المختار.</div>';return;}
+  const groups=SITES.map(s=>({id:s.id,name:s.name,emps:vis.filter(e=>e.site===s.id)}));
+  const un=vis.filter(e=>!SITES.some(s=>s.id===e.site)); if(un.length)groups.push({id:'',name:'غير محدد',emps:un});
+  let h='';
+  groups.forEach(g=>{
+    if(!g.emps.length)return;
+    h+=`<div class="site-section"><div class="site-head"><div class="site-name">${esc(g.name)} <span class="site-count">(${g.emps.length})</span></div>
+      ${g.id?`<button class="site-mark-btn" data-site="${g.id}">تسجيل الوقت المحدد لكل ظاهر في القسم ده</button>`:''}</div>
+      <div class="ledger-inner"><div class="lrow head"><div>#</div><div>الاسم</div><div>الحالة</div><div>الحضور / الانصراف</div><div>ملاحظات</div><div class="center">ساعات</div><div class="center">إضافي / نقص</div></div>`;
+    g.emps.forEach((emp,i)=>{
+      const en=getEntry(selectedDay,emp.id), c=calc(en,selectedDay,emp.site), p=en.status==='present';
+      h+=`<div class="lrow" data-emp="${emp.id}"><div class="idx">${i+1}</div>
+        <div class="ename-cell"><div class="ename" data-emp="${emp.id}" title="اضغط لعرض الشهر كامل">${esc(emp.name)}</div>
+        ${emp.site===DUAL?`<div class="subloc-group"><div class="subloc-chip${en.subLoc.dahab?' sel':''}" data-emp="${emp.id}" data-loc="dahab">الدهب</div><div class="subloc-chip${en.subLoc.shorouk?' sel':''}" data-emp="${emp.id}" data-loc="shorouk">الشروق</div></div>`:''}</div>
+        <div class="status-group">${chip(emp.id,'present','حاضر',en.status)}${chip(emp.id,'absent','غائب',en.status)}${chip(emp.id,'vacation','إجازة',en.status)}${chip(emp.id,'permission','إذن',en.status)}</div>
+        <div class="times"><input type="time" data-emp="${emp.id}" data-field="in" value="${en.in||''}" ${p?'':'disabled'}><input type="time" data-emp="${emp.id}" data-field="out" value="${en.out||''}" ${p?'':'disabled'}></div>
+        <div class="notes-wrap"><input type="text" class="notes-input" data-emp="${emp.id}" value="${esc(en.notes||'')}" placeholder="سلف، ملاحظة..."></div>
+        <div class="num ${p?'':'zero'}" data-label="ساعات">${p?fmt(c.worked):'—'}</div>
+        <div class="num ${c.ot>0?'ot':(c.ot<0?'short':'zero')}" data-label="إضافي / نقص">${p&&c.ot!==0?fmt(c.ot):'—'}</div></div>`;
+    });
+    h+='</div></div>';
+  });
+  L.innerHTML=h;
+  const siteOf=id=>(state.employees.find(e=>e.id===id)||{}).site;
+  L.querySelectorAll('.ename').forEach(el=>el.onclick=()=>openModal(el.dataset.emp));
+  L.querySelectorAll('.site-mark-btn').forEach(b=>b.onclick=()=>{
+    const bi=$('bulkIn').value, bo=$('bulkOut').value;
+    visible().filter(e=>e.site===b.dataset.site).forEach(e=>{const en=getEntry(selectedDay,e.id);en.status='present';en.in=bi||cfg(e.site).in;en.out=bo||cfg(e.site).out;});
+    saveSoon();renderDay();
+  });
+  L.querySelectorAll('.subloc-chip').forEach(c=>c.onclick=()=>{const en=getEntry(selectedDay,c.dataset.emp);en.subLoc[c.dataset.loc]=!en.subLoc[c.dataset.loc];saveSoon();renderLedger();});
+  L.querySelectorAll('.schip').forEach(c=>c.onclick=()=>{
+    const id=c.dataset.emp,en=getEntry(selectedDay,id);en.status=c.dataset.status;
+    if(en.status==='present'&&!en.in&&!en.out){const f=cfg(siteOf(id));en.in=$('bulkIn').value||f.in;en.out=$('bulkOut').value||f.out;}
+    saveSoon();renderDay();
+  });
+  L.querySelectorAll('input[type=time]').forEach(i=>i.onchange=()=>{getEntry(selectedDay,i.dataset.emp)[i.dataset.field]=i.value;saveSoon();renderDay();});
+  L.querySelectorAll('.notes-input').forEach(i=>i.onchange=()=>{getEntry(selectedDay,i.dataset.emp).notes=i.value;saveSoon();});
+}
+function renderDay(){renderStrip();renderLedger();}
+
+$('btnMarkAll').onclick=()=>{
+  const bi=$('bulkIn').value,bo=$('bulkOut').value;
+  visible().forEach(e=>{const en=getEntry(selectedDay,e.id);en.status='present';en.in=bi||cfg(e.site).in;en.out=bo||cfg(e.site).out;});
+  saveSoon();renderDay();
+};
+$('btnClearDay').onclick=()=>{
+  const v=visible(); if(!confirm('مسح تسجيل اليوم ده لـ '+v.length+' موظف (الظاهرين حاليًا)؟'))return;
+  v.forEach(e=>{if(state.days[selectedDay])delete state.days[selectedDay][e.id];});
+  saveSoon();renderDay();
+};
+
+/* ---------- summary ---------- */
+function stats(emp){
+  let p=0,a=0,v=0,m=0,w=0,o=0;
+  for(let d=1;d<=DIM;d++){const r=state.days[d];if(!r||!r[emp.id])continue;const e=r[emp.id];
+    if(e.status==='present'){p++;const c=calc(e,d,emp.site);w+=c.worked;o+=c.ot;}
+    else if(e.status==='absent')a++;else if(e.status==='vacation')v++;else if(e.status==='permission')m++;}
+  return{p,a,v,m,w,o};
+}
+function renderSummary(){
+  const vis=visible(); let h='',tp=0,ta=0,to=0;
+  vis.forEach(emp=>{
+    const s=stats(emp); tp+=s.p;ta+=s.a;to+=s.o; const rem=emp.leaveBalance-s.v;
+    h+=`<tr><td class="ename" data-emp="${emp.id}">${esc(emp.name)}</td><td>${esc(siteName(emp.site))}</td>
+      <td class="center"><span class="pill ok">${s.p}</span></td><td class="center">${s.a?`<span class="pill bad">${s.a}</span>`:'—'}</td>
+      <td class="center">${s.v||'—'}</td><td class="center">${rem<0?`<span class="pill bad">${rem}</span>`:rem}</td><td class="center">${s.m||'—'}</td>
+      <td class="center">${fmt(s.w)}</td><td class="center">${s.o>0?`<span class="pill gold">${fmt(s.o)}</span>`:(s.o<0?`<span class="pill bad">${fmt(s.o)}</span>`:'—')}</td></tr>`;
+  });
+  $('summaryBody').innerHTML=h||'<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text-dim)">لا يوجد موظفون</td></tr>';
+  $('summaryBody').querySelectorAll('td.ename').forEach(td=>td.onclick=()=>openModal(td.dataset.emp));
+  $('kpis').innerHTML=`<div class="kcard"><div class="v">${vis.length}</div><div class="l">عدد الموظفين</div></div>
+    <div class="kcard"><div class="v">${tp}</div><div class="l">إجمالي أيام الحضور</div></div>
+    <div class="kcard"><div class="v">${ta}</div><div class="l">إجمالي أيام الغياب</div></div>
+    <div class="kcard accent"><div class="v">${fmt(to)}</div><div class="l">صافي الإضافي / النقص</div></div>`;
+}
+
+/* ---------- modal ---------- */
+function openModal(id){
+  const emp=state.employees.find(e=>e.id===id); if(!emp)return;
+  $('modalEmpName').textContent=emp.name+' — '+siteName(emp.site);
+  const s=stats(emp); let rows='';
+  for(let d=1;d<=DIM;d++){
+    const e=peek(d,id),p=e.status==='present',c=calc(e,d,emp.site);
+    rows+=`<tr class="row-${e.status}"><td>${d}/9 — ${WEEKDAYS[dow(d)]}</td><td class="st">${{present:'حاضر',absent:'غائب',vacation:'إجازة',permission:'إذن',unset:'—'}[e.status]}</td>
+      <td>${p?(e.in||'—'):'—'}</td><td>${p?(e.out||'—'):'—'}</td><td class="center">${p?fmt(c.worked):'—'}</td>
+      <td class="center" style="${c.ot>0?'color:var(--gold-bright)':(c.ot<0?'color:var(--bad)':'')}">${p&&c.ot!==0?fmt(c.ot):'—'}</td>
+      <td><input type="text" class="mnote" data-day="${d}" value="${esc(e.notes)}" placeholder="—"></td></tr>`;
+  }
+  $('modalTableBody').innerHTML=rows;
+  $('modalKpis').innerHTML=`<div class="kcard"><div class="v">${s.p}</div><div class="l">أيام حضور</div></div><div class="kcard"><div class="v">${s.a}</div><div class="l">أيام غياب</div></div>
+    <div class="kcard"><div class="v">${s.v}</div><div class="l">إجازة</div></div><div class="kcard"><div class="v">${emp.leaveBalance-s.v}</div><div class="l">رصيد إجازات متبقي</div></div>
+    <div class="kcard"><div class="v">${fmt(s.w)}</div><div class="l">إجمالي الساعات</div></div><div class="kcard accent"><div class="v">${fmt(s.o)}</div><div class="l">صافي الإضافي / النقص</div></div>`;
+  $('modalTableBody').querySelectorAll('.mnote').forEach(i=>i.onchange=()=>{getEntry(i.dataset.day,id).notes=i.value;saveSoon();});
+  $('empModalOverlay').classList.add('open');
+}
+const closeModal=()=>{$('empModalOverlay').classList.remove('open');if($('panel-day').classList.contains('active'))renderLedger();};
+$('modalCloseBtn').onclick=closeModal;
+$('empModalOverlay').onclick=e=>{if(e.target.id==='empModalOverlay')closeModal();};
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+/* ---------- employees ---------- */
+function siteOpts(cur,blank){return (blank?'<option value="">غير محدد</option>':'')+SITES.map(s=>`<option value="${s.id}" ${cur===s.id?'selected':''}>${esc(s.name)}</option>`).join('');}
+function renderEmployees(){
+  const w=$('empManage'); w.innerHTML='';
+  visible().forEach(emp=>{
+    const r=document.createElement('div'); r.className='emp-item';
+    r.innerHTML=`<input type="text" value="${esc(emp.name)}" data-f="name"><select class="site-select">${siteOpts(emp.site,true)}</select>
+      <div class="leave-field"><span>رصيد الإجازات</span><input type="number" step="0.5" value="${emp.leaveBalance}" data-f="leave"></div><button class="rm" title="حذف الموظف">✕</button>`;
+    r.querySelector('[data-f=name]').onchange=e=>{emp.name=e.target.value.trim()||emp.name;saveSoon();};
+    r.querySelector('.site-select').onchange=e=>{emp.site=e.target.value;saveSoon();renderFilter();updateCount();};
+    r.querySelector('[data-f=leave]').onchange=e=>{const v=parseFloat(e.target.value);emp.leaveBalance=isNaN(v)?0:v;e.target.value=emp.leaveBalance;saveSoon();};
+    r.querySelector('.rm').onclick=()=>{if(!confirm('حذف '+emp.name+' من القائمة؟'))return;state.employees=state.employees.filter(x=>x.id!==emp.id);saveSoon();renderFilter();updateCount();renderEmployees();};
+    w.appendChild(r);
+  });
+}
+$('btnAddEmp').onclick=()=>{
+  const n=$('newEmpName').value.trim(); if(!n)return;
+  state.employees.push({id:uid(),name:n,site:$('newEmpSite').value,leaveBalance:0});
+  $('newEmpName').value=''; saveSoon();renderFilter();updateCount();renderEmployees();
+};
+$('newEmpName').addEventListener('keydown',e=>{if(e.key==='Enter')$('btnAddEmp').click();});
+
+/* ---------- tabs / filters / init ---------- */
+function refresh(){
+  updateCount();
+  const tab=document.querySelector('.tab.active').dataset.tab;
+  if(tab==='day')renderDay(); else if(tab==='summary')renderSummary(); else renderEmployees();
+}
+document.querySelectorAll('.tab').forEach(tb=>tb.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+  tb.classList.add('active'); $('panel-'+tb.dataset.tab).classList.add('active'); refresh();
+});
+$('siteSel').onchange=e=>{fSite=e.target.value; if(fSite)$('newEmpSite').value=fSite; refresh();};
+$('q').oninput=e=>{fQ=e.target.value;refresh();};
+$('qClear').onclick=()=>{$('q').value='';fQ='';refresh();$('q').focus();};
+load();
+$('newEmpSite').innerHTML=siteOpts('',false);
+const now=new Date(); selectedDay=(now.getFullYear()===YEAR&&now.getMonth()+1===MONTH)?Math.min(Math.max(now.getDate(),1),DIM):1;
+renderFilter(); refresh();
+window.addEventListener('pagehide',save);
+
+window.__app={get:()=>state,set:s=>{state=s;},refresh:()=>refresh(),KEY};
+</script>
+<div id="loginOv"><div class="card"><h2>تسجيل الدخول — سجل الحضور</h2>
+<input id="lgEmail" type="email" placeholder="الإيميل" autocomplete="username" dir="ltr">
+<input id="lgPass" type="password" placeholder="الباسورد" autocomplete="current-password" dir="ltr">
+<div id="loginErr"></div><button class="primary" id="lgBtn">دخول</button></div></div>
+<div id="syncBar"><span id="syncDot"></span><span id="syncTxt">غير متصل</span>
+<button id="bkExp">نسخة احتياطية</button><button id="bkImp">استرجاع</button><button id="lgOut">خروج</button>
+<input type="file" id="bkFile" accept=".json" style="display:none"></div>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {getAuth,signInWithEmailAndPassword,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {getDatabase,ref,onValue,update} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+const firebaseConfig={apiKey:"AIzaSyAIvw69KFlY-6QpaOd-fJOrxqbSr9WFshk",authDomain:"mas-bd61b.firebaseapp.com",databaseURL:"https://mas-bd61b-default-rtdb.firebaseio.com",projectId:"mas-bd61b",storageBucket:"mas-bd61b.firebasestorage.app",messagingSenderId:"711713173819",appId:"1:711713173819:web:2c871ce0b0b76d560d071e"};
+const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app),ROOT='attendance/2026_09',A=window.__app,$=id=>document.getElementById(id);
+let ready=false,last=null,unsub=null,unConn=null,deferred=false;
+const isEmpty=e=>(!e.status||e.status==='unset')&&!e.in&&!e.out&&!e.notes&&!(e.subLoc&&(e.subLoc.dahab||e.subLoc.shorouk));
+function flat(s){const o={};s.employees.forEach((e,i)=>{o['employees/'+e.id]=JSON.stringify({name:e.name,site:e.site||'',leaveBalance:e.leaveBalance||0,src:e.src||'',order:i});});
+ for(const d in s.days){const r=s.days[d];for(const id in r){const e=r[id];if(isEmpty(e))continue;
+  o['days/d'+d+'/'+id]=JSON.stringify({status:e.status||'unset',in:e.in||'',out:e.out||'',notes:e.notes||'',dahab:!!(e.subLoc&&e.subLoc.dahab),shorouk:!!(e.subLoc&&e.subLoc.shorouk)});}}
+ return o;}
+function build(v){const employees=Object.entries(v.employees||{}).map(([id,e])=>{const o={id,name:e.name,site:e.site||'',leaveBalance:+e.leaveBalance||0,order:e.order||0};if(e.src)o.src=e.src;return o;}).sort((a,b)=>a.order-b.order);employees.forEach(e=>delete e.order);
+ const days={};for(const k in (v.days||{})){const d=k.slice(1);days[d]={};for(const id in v.days[k]){const e=v.days[k][id];days[d][id]={status:e.status||'unset',in:e.in||'',out:e.out||'',notes:e.notes||'',subLoc:{dahab:!!e.dahab,shorouk:!!e.shorouk}};}}
+ return {employees,days};}
+const same=(a,b)=>{const ka=Object.keys(a);return ka.length===Object.keys(b).length&&ka.every(k=>a[k]===b[k]);};
+function push(){if(!ready)return;const n=flat(A.get()),u={};
+ for(const k in n)if(!last||last[k]!==n[k])u[ROOT+'/'+k]=JSON.parse(n[k]);
+ if(last)for(const k in last)if(!(k in n))u[ROOT+'/'+k]=null;
+ if(!Object.keys(u).length)return;last=n;update(ref(db),u).catch(e=>{$('syncTxt').textContent='فشل الحفظ: '+e.code;});}
+window.__onSave=push;
+function safeRefresh(){const a=document.activeElement;if(a&&a.matches&&a.matches('#ledger input,#empManage input,#empManage select,.modal-card input')){deferred=true;return;}A.refresh();}
+document.addEventListener('focusout',()=>{if(deferred)setTimeout(()=>{deferred=false;A.refresh();},400);});
+function start(){
+ unConn=onValue(ref(db,'.info/connected'),s=>{const on=s.val()===true;$('syncDot').className=on?'on':'';$('syncTxt').textContent=on?'متزامن':'غير متصل — التعديلات هتتبعت أول ما النت يرجع (سيب الصفحة مفتوحة)';});
+ unsub=onValue(ref(db,ROOT),snap=>{const v=snap.val();
+  if(v==null){if(!ready){ready=true;last={};push();}$('loginOv').style.display='none';return;}
+  const cur=flat(A.get());
+  if(ready&&last&&!same(cur,last))return; // تعديل محلي لسه مبعتش
+  const ns=build(v),nf=flat(ns);
+  if(!ready||!same(nf,cur)){A.set(ns);try{localStorage.setItem(A.KEY,JSON.stringify(ns));}catch(e){}safeRefresh();}
+  last=nf;ready=true;$('loginOv').style.display='none';
+ },err=>{$('loginErr').textContent='الحساب ده غير مصرح له بالدخول';$('loginOv').style.display='flex';signOut(auth);});
+}
+onAuthStateChanged(auth,u=>{if(u){$('loginErr').textContent='جاري تحميل البيانات…';$('lgBtn').disabled=true;start();}
+ else{if(unsub)unsub();if(unConn)unConn();unsub=unConn=null;ready=false;last=null;$('lgBtn').disabled=false;$('loginOv').style.display='flex';}});
+$('lgBtn').onclick=async()=>{$('loginErr').textContent='';try{await signInWithEmailAndPassword(auth,$('lgEmail').value.trim(),$('lgPass').value);}
+ catch(e){$('loginErr').textContent=e.code==='auth/network-request-failed'?'مفيش اتصال بالنت':'الإيميل أو الباسورد غلط';}};
+$('lgPass').addEventListener('keydown',e=>{if(e.key==='Enter')$('lgBtn').click();});
+$('lgOut').onclick=()=>signOut(auth);
+$('bkExp').onclick=()=>{const b=new Blob([JSON.stringify(A.get())],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='attendance-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();};
+$('bkImp').onclick=()=>$('bkFile').click();
+$('bkFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const o=JSON.parse(await f.text());if(!Array.isArray(o.employees)||typeof o.days!=='object')throw 0;
+ if(!confirm('الاسترجاع هيستبدل كل البيانات الحالية (عند الكل). متأكد؟'))return;A.set(o);save();A.refresh();}catch(x){alert('الملف مش نسخة احتياطية صحيحة');}e.target.value='';};
+</script>
+
+</html>
